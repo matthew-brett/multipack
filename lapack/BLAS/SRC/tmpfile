@@ -1,0 +1,18 @@
+caxpy.o   chpr2.o   dcabs1.o  dsyr.o	lsame.o   sspr2.o   zcopy.o   zhpr2.o
+ccopy.o   crotg.o   dcopy.o   dsyr2.o	sasum.o   sswap.o   zdotc.o   zrotg.o
+cdotc.o   cscal.o   ddot.o    dsyr2k.o	saxpy.o   ssymm.o   zdotu.o   zscal.o
+cdotu.o   csscal.o  dgbmv.o   dsyrk.o	scasum.o  ssymv.o   zdscal.o  zswap.o
+cgbmv.o   cswap.o   dgemm.o   dtbmv.o	scnrm2.o  ssyr.o    zgbmv.o   zsymm.o
+cgemm.o   csymm.o   dgemv.o   dtbsv.o	scopy.o   ssyr2.o   zgemm.o   zsyr2k.o
+cgemv.o   csyr2k.o  dger.o    dtpmv.o	sdot.o	  ssyr2k.o  zgemv.o   zsyrk.o
+cgerc.o   csyrk.o   dnrm2.o   dtpsv.o	sgbmv.o   ssyrk.o   zgerc.o   ztbmv.o
+cgeru.o   ctbmv.o   drot.o    dtrmm.o	sgemm.o   stbmv.o   zgeru.o   ztbsv.o
+chbmv.o   ctbsv.o   drotg.o   dtrmv.o	sgemv.o   stbsv.o   zhbmv.o   ztpmv.o
+chemm.o   ctpmv.o   dsbmv.o   dtrsm.o	sger.o	  stpmv.o   zhemm.o   ztpsv.o
+chemv.o   ctpsv.o   dscal.o   dtrsv.o	snrm2.o   stpsv.o   zhemv.o   ztrmm.o
+cher.o	  ctrmm.o   dspmv.o   dzasum.o	srot.o	  strmm.o   zher.o    ztrmv.o
+cher2.o   ctrmv.o   dspr.o    dznrm2.o	srotg.o   strmv.o   zher2.o   ztrsm.o
+cher2k.o  ctrsm.o   dspr2.o   icamax.o	ssbmv.o   strsm.o   zher2k.o  ztrsv.o
+cherk.o   ctrsv.o   dswap.o   idamax.o	sscal.o   strsv.o   zherk.o
+chpmv.o   dasum.o   dsymm.o   isamax.o	sspmv.o   xerbla.o  zhpmv.o
+chpr.o	  daxpy.o   dsymv.o   izamax.o	sspr.o	  zaxpy.o   zhpr.o

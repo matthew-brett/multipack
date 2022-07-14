@@ -1,0 +1,72 @@
+\newif\ifwithexamples
+\newcommand{\secauthor}[1]{{\scriptsize #1\\}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+%%tth:\newenvironment{pmatrix}{\left(\begin{array}{ccccccc}}{\end{array}\right)}
+%%tth:\newenvironment{split}{\begin{array}{rl}}{\end{array}}
+%%tth:\newenvironment{cases}{\left\{\begin{array}1}{\end{array}\right.}
+%%tth:\newcommand{\mathrm}[1]{{\rm #1}}
+%%tth:\newcommand{\DeclareMathOperator}[2]{\def#1{\mathrm{#2}}}
+%%tth:\newcommand{\leqslant}{\leq}
+%%tth:\newcommand{\mathbb}{\bf #1}
+% Some abbreviations and definitions for doing math in LaTeX2e
+%\usepackage{amsmath} and \usepackage{amssymb} are required
+% Pearu Peterson <pearu@ioc.ee>
+\newcommand{\ux}[2]{\frac{\partial{#1}}{\partial{#2}}}
+\newcommand{\nux}[3]{\frac{\partial^{#1}{#2}}{\partial{#3}^{#1}}}
+\newcommand{\nuxy}[4]{\frac{ \partial^{#1}{#2} }{ \partial{#3}\partial{#4} }}
+\newcommand{\nmuxy}[5]{\frac{\partial^{#1+#2}{#3} }{ \partial{#4}^{#1}\partial{#5}^{#2} }}
+\newcommand{\Ux}[2]{\frac{d{#1}}{d{#2}}}
+\newcommand{\nUx}[3]{\frac{d^{#1}{#2}}{d{#3}^{#1}}}
+\newcommand{\mat}[1]{\mathbf{#1}}
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+%%tth:\renewcommand{\vec}[1]{{\bf #1}}
+\newcommand{\pmat}[1]{\begin{pmatrix} #1 \end{pmatrix}}
+\newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\norm}[1]{\left\|{#1}\right\|}
+
+\DeclareMathOperator{\dive}{div}
+\DeclareMathOperator{\rot}{rot}
+\DeclareMathOperator{\grad}{grad}
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\cn}{cn}
+\DeclareMathOperator{\arch}{arch}
+\DeclareMathOperator{\sech}{sech}
+\DeclareMathOperator{\supp}{supp}
+\DeclareMathOperator{\I}{i}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\const}{const}
+\DeclareMathOperator{\Const}{Const}
+\DeclareMathOperator{\F}{F}
+\DeclareMathOperator{\Transpose}{T}
+\DeclareMathOperator{\FALSE}{FALSE}
+\DeclareMathOperator{\TRUE}{TRUE}
+\newcommand{\T}[1]{{#1}^{\!\Transpose{}\!\!}}
+\newcommand{\tr}{^{\!\mathrm{T}\!\!}}
+\newcommand{\eref}[1]{Eq.~\eqref{#1}}
+\newcommand{\aref}[1]{App.~\ref{#1}}
+\newcommand{\fref}[1]{Fig.~\ref{#1}}
+\newcommand{\sref}[1]{Sec.~\ref{#1}}
+\newcommand{\rcite}[1]{Ref.~\cite{#1}}
+\newcommand{\rrcite}[2]{Refs.~\cite{#1},\cite{#2}}
+
+\newcommand{\field}[1]{\mathbb{#1}}
+\newcommand{\R}{\field{R}}
+\newcommand{\C}{\field{C}}
+\newcommand{\Z}{\field{Z}}
+\newcommand{\N}{\field{N}}
+
+\newcommand{\ra}{\rightarrow}
+\newcommand{\la}{\leftarrow}
+\newcommand{\Ra}{\Rightarrow}
+\newcommand{\La}{\Leftarrow}
+\newcommand{\lra}{\leftrightarrow}
+\newcommand{\Lra}{\Leftrightarrow}
+
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

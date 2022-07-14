@@ -1,0 +1,296 @@
+
+\section{Integration}
+\label{sec:quadpack}
+\secauthor{Travis Oliphant, Oliphant.Travis@altavista.net}
+
+\subsection{Univariate Integration}
+Consider a function $f:\R \rightarrow \R$ with values
+denoted by $f(x)$ with a possible weight function $w:\R \rightarrow \R$
+with values $w(x)$.  Suppose we are interested in computing the value
+of the definite integral
+\[
+\int_a^b f(x) w(x) dx.
+\]
+\code{Multipack} (\code{quadpack}) provides a function
+\code{quad} for integrating such univariate functions possibly multiplied
+by various weights over finite and infinite intervals.  It is a Python-C
+wrapper of the double-precision FORTRAN integrators \code{qags},
+\code{qagi}, \code{qagp}, \code{qawo}, \code{qawf}, \code{qawc}, and
+\code{qaws} of \code{QUADPACK}.  Which of these integrators is called
+depends on the weight used and the options passed to the function
+\code{quad} which has the following definition:
+\begin{verbatim}
+quad(func,a,b,args=(),full_output=0,epsabs=1.49e-8,epsrel=1.49e-8,limit=50,
+     points=None,weight=None,wvar=None,wopts=None,maxp1=50,limlst=50)
+\end{verbatim}
+
+\subsubsection{Typical Usage}
+Under typical usage, one specifies the function, the limits of
+integration and possibly additional arguments to the
+function.
+\begin{verbatim}
+>>> result,abserr = quad(func, a, b, extra_args)
+\end{verbatim}
+Function \code{quad} returns the result of the integration in
+\code{result} and an absolute error estimate in \code{abserr}.  If $I$
+is the true integral, $R$ is the computed result, and $E$ is the
+error, then it should be that $|I-R| \leq E$.  If there is an input
+error or a Python error occurs (likely due to calling the function
+incorrectly) an exception is raised.  If a numerical problem is
+encountered while integrating the function a warning message is
+displayed explaining the problem but the results are still
+returned. (See \code{full\_output} for alternate behavior.)
+
+\subsubsection{Input Arguments}
+
+The behind-the-scenes code of \code{quad} can vary quite a bit depending
+on the input arguments which are now explained.
+\begin{description}
+\item[\code{func}] --- The function, $f$, to be integrated.  This should be
+a callable object whose first argument is the variable of integration.
+The callable object should treat the first argument as a Float.
+Additional arguments can be passed to the function with \code{args}. 
+\item[\code{(a,b)}] --- The limits of integration.  Use Multipack.Inf
+and -Multipack.Inf for infinite limits. Infinite limits are only
+available with no weight or a sinusoidal weight.  
+\item[\code{args}] --- Extra arguments to pass to the integrand.
+If only a single extra argument is needed simply pass it here.  If
+multiple extra arguments are needed wrap them in a tuple.
+\item[\code{full\_output}] --- A flag indicating whether or not a
+dictionary of optional output is desired as the third output.  If
+\code{full\_output=1} the warning message regarding difficult
+integrations is suppressed and appended to the return tuple.  Some
+contents of the dictionary vary depending on the type of integration
+performed.  It is useful to know that for infinite limits the range is
+transformed to $(0,1)$ and the optional outputs are given with respect
+to this transformed range. The common keys of this dictionary which
+we'll call \code{info} are: (Let $M=$ \code{limit}.)
+\begin{description}
+\item[\code{'neval'}] --- The number of function evaluations.
+\item[\code{'last'}] --- The number of subintervals produced in the
+subdivision process.  Call this number $K$.
+\item[\code{'alist'}] --- A rank-1 array of length $M$, the first $K$
+elements of which are the left end points of the subintervals in the
+partition of the integration range.  
+\item[\code{'blist'}] --- A rank-1 array of length $M$, the first $K$
+elements of which are the right end points of the subintervals. 
+\item[\code{'rlist'}] --- A rank-1 array of length $M$, the first $K$
+elements of which are the integral approximations on the subintervals.
+\item[\code{'elist'}] --- A rank-1 array of length $M$, the first $K$
+elements of which are the moduli of the absolute error estimates on
+the subintervals.
+\item[\code{'iord'}] --- A rank-1 integer array of length $M$, the first $L$
+elements of which are pointers to the error estimates over the
+subintervals with $L = K$ if $K \leq M/2 + 2$ or $L = M+1-K$
+otherwise.  Let $I$ be the sequence \code{info['iord']} and let $E$ be
+the sequence \code{info['elist']}.  Then $E_{I_1},\ldots,E_{I_L}$
+forms a decreasing sequence.
+\end{description}
+\item[\code{epsabs}] --- Absolute accuracy requested $>0$.  
+\item[\code{epsrel}] --- Relative accuracy requested $\geq
+\textrm{max}(50*\epsilon, 0.5 \times 10^{-28})$.
+\item[\code{limit}] --- An upper bound on the number of
+subintervals in the partition of the integration region.
+\item[\code{points}] --- A sequence (call its length $P$) of user
+provided break points of the (finite) integration interval where local
+difficulties of the integrand may occur ({\em e.g.} singularities,
+discontinuities).  The sequence does not have to be sorted. If this
+sequence is provided the following additional outputs are placed in
+the optional output dictionary.  
+\begin{description}
+\item[\code{'pts'}] --- A rank-1 array of length $P+2$ containing the
+integration limits and the break points of the interval in ascending order. 
+\item[\code{'level'}] --- A rank-1 integer array of length $M$
+(=\code{limit}), containing the subdivision levels of the subintervals,
+{\em i.e.} if $(aa,bb)$ is a subinterval of $(p_1,p_2)$ where $p_1$ and
+$p_2$ are adjacent elements of \code{info['pts']}, then $(aa,bb)$ has
+level $l$ if $|bb-aa| = |p_2-p_1| 2^{-l}.$ 
+\item[\code{'ndin'}] --- A rank-1 integer array of length $P+2$.
+After first integration over the intervals $(p_1,p_2)$, the error
+estimates over some of the intervals may have been increased
+artificially, in order to put their subdivision forward.  This array
+has ones in slots corresponding to the subintervals for which this
+happens.  All other values are 0.
+\end{description}
+\item[\code{weight}] --- A string indicating a weighting function
+with which to multiply the integrand over the integration region. One
+of the following: \code{'cos'}, \code{'sin'}, \code{'alg'},
+\code{'alg-loga'}, \code{'alg-logb'}, \code{'alg-log'},
+\code{'cauchy'}.  See below for additional information.
+\item[\code{wvar}] --- Variable(s) to pass to weighting function.
+\item[\code{wopts}] --- Optional inputs for reusing Chebyshev
+moments when performing multiple integrations using Clenshaw-Curtis
+method with a sinusoidal weight over the same finite interval.  When
+used, the first element of this length 2 sequence is \code{info['momcom']},
+the second element is \code{info['chebmo']} where \code{info} is the
+optional dictionary from a previous run over the same interval.
+\item[\code{maxp1}] --- An upper bound on the number of Chebyshev
+moments that can be stored, {\em i.e.} if $M_p=$\code{info['maxp1']},
+then moments can only be stored for intervals of lengths $|b-a|
+2^{-l}, l=0,1,\ldots, M_p-1$.  $M_p \geq 1$.
+\item[\code{limlst}] --- An upper bound on the number of cycles
+$\geq 3$.  Only used for sinusoidal weighting with an infinite end-point. 
+\end{description}
+
+\subsubsection{Weighting functions: inputs and optional outputs}
+The following weighting functions are available.  None of these can be
+used with infinite end points except for the \code{'sin'} or
+\code{'cos'} weighting which can use a single infinite end-point.
+\begin{description}
+\item[\code{'cos','sin'}] --- $w(x) = \cos(\omega x)$ or $w(x) =
+\sin(\omega x)$.  Set \code{wvar} to $\omega$.  
+
+\textbf{Finite Integration Limits}
+
+If both integration limits are finite then the integration is
+performed using a Clenshaw-Curtis method which uses Chebyshev moments.
+If \code{full\_output} is 1, then these moments are provided through entries
+in the info dictionary which has additional members:
+\begin{description}
+\item[\code{'momcom'}] --- The maximum level of Chebyshev moments that 
+been computed, {\em i.e.} if $M_c$ is
+\code{info['momcom']} then the moments have been computed for
+intervals of length $|b-a|2^{-l}, l=0,1,\ldots,M_c$.
+\item[\code{'nnlog'}] --- A rank-1 integer array of length $M$
+(=\code{limit}), containing the subdivision levels of the
+subintervals, {\em i.e.} an element of this array is equal to $l$ if
+the corresponding subinterval is of length $|b-a| 2^{-l}$.
+\item[\code{'chebmo'}] --- A rank-2 array of shape (25,\code{maxp1})
+containing the computed Chebyshev moments.  These can be passed on to
+an integration over the same interval by passing this array as the
+second element of the sequence \code{wopts} and passing
+\code{info['momcom']} as the first element.
+\end{description} 
+
+\textbf{Infinite Integration Limits}
+
+If one of the integration limits is infinite ($\pm$Multipack.Inf) then
+a Fourier integral is computed (assuming $\omega \neq 0$).  If
+\code{full\_output} is 1 and a numerical error is encountered, besides
+the error message attached to the output tuple, an dictionary is also
+appended to the output tuple which translates the error codes in the array
+\code{info['ierlst']} to English.  The output information dictionary
+contains the following entries instead of \code{'last'},
+\code{'alist'}, \code{'blist'}, \code{'rlist'}, and \code{'elist'}.
+\begin{description}
+\item[\code{'lst'}] --- The number of subintervals needed for the
+integration call it $K_f$ in what follows.
+\item[\code{'rslst'}] --- A rank-1 array of length
+$M_f=$\code{limlst}, whose first $K_f$ elements contain the integral
+contribution over the interval $(a + (k-1)c, a+kc)$ where $c =
+\left(2\left\lfloor\left| \omega \right| \right\rfloor+1\right) \pi /
+\left| \omega \right|$ where $k = 1,2,\ldots,K_f$.
+\item[\code{'erlst'}] --- A rank-1 array of length $M_f$ containing
+the error estimate corresponding to the interval in the same
+positition in \code{info['rslst']}. 
+\item[\code{'ierlst'}] --- A rank-1 integer array of length $M_f$
+containing an error flag corresponding to the interval in the same
+postion in \code{info['rslst']}.  See the explanation dictionary (last
+output) for the meaning of the codes.
+\end{description}
+
+\item[\code{'alg'}] --- $w(x) = (x-a)^\alpha (b-x)^\beta$.  Set
+\code{wvar} to $(\alpha,\beta)$.  
+\item[\code{'alg-loga'}] --- $w(x) = (x-a)^\alpha (b-x)^\beta
+\textrm{log}(x-a)$. Set \code{wvar} to $(\alpha, \beta)$.
+\item[\code{'alg-logb'}] --- $w(x) = (x-a)^\alpha (b-x)^\beta
+\textrm{log}(b-x)$. Set \code{wvar} to $(\alpha, \beta)$.
+\item[\code{'alg-log'}] --- $w(x) = (x-a)^\alpha (b-x)^\beta
+\textrm{log}(x-a) \textrm{log}(b-x)$. Set \code{wvar} to $(\alpha,
+\beta)$. 
+
+\item[\code{'cauchy'}] --- $w(x) = 1/(x-c)$.  Set \code{wvar} to $c$.
+\end{description}
+
+\subsection{Multivariate Integration}
+
+Some effort was taken to allow the function \code{quad} to be called
+recursively.  That is, the function to be integrated can itself call
+\code{quad}.  This allows for the construction of simple (and naive) N-variate
+integrators rather straightforwardly.  As an illustration, both a
+double and triple integration function are provided in
+\code{Multipack} (\code{quadpack}).  These multivariate integrators do
+not currently take advantage of the advanced options of \code{quad}.
+
+\subsubsection{Double Integrals}
+
+Suppose we wish to find a numerical approximation to the definite
+double integral
+\[
+\int_a^b \int_{g(x)}^{h(x)} f(x,y) dy dx
+\]
+We can use the function \code{dblquad} to do this.  This function must
+be called (with defaults for keyword arguments shown) as
+\begin{verbatim}
+dblquad(func2d,a,b,gfun,hfun,extra_args=(),epsabs=1.49e-8,epsrel=1.49e-8):
+\end{verbatim}
+This function always returns a tuple consisting of the result as the
+first element and an estimate of the error over the outermost integral
+(assuming the inner integrals are computed exactly) as the second
+element. The arguments to \code{dblquad} are defined as follows.
+\begin{description}
+\item[\code{func2d}] --- The bivariate function to be integrated.  This
+must be defined to take at least two arguments in the order $(y,x)$.
+\textbf{Note that this is opposite from the natural definition.}  If
+further arguments to the function are necessary they can be passed
+using the input \code{extra\_args}.
+\item[\code{(a,b)}] --- The limits of integration over the $x$ variable.
+\item[\code{gfun}] --- A function which takes a single float argument ($x$)
+and returns a float as a result.  It is the lower limit of integration
+over the $y$ variable.  (Note that \code{lambda} can be useful
+here as with entering the other function describing the region of
+integration).
+\item[\code{hfun}] --- A single-variable, single return function
+representing the upper limit of integration over the $y$ variable.
+\item[\code{extra\_args}] --- Extra arguments to pass to \code{func}
+in a tuple or singly if just one.
+\end{description}
+Note that the arguments \code{epsabs} and \code{epsrel} are passed
+directly on to the univariate integration steps and therefore
+represent desired error only over the (recursively called) 1-D
+integrals.  They do not represent the total error desired over the
+entire double integral. 
+
+\subsubsection{Triple Integrals}
+
+Suppose we want to find an approximation to the definite triple
+integral
+\[
+\int_a^b \int_{g(x)}^{h(x)} \int_{q(x,y)}^{r(x,y)} f(x,y,z) dz dy dx.
+\]
+The function \code{tplquad} can accomplish this.  It's definition is
+as follows.
+\begin{verbatim}
+tplquad(func3d,a,b,gfun,hfun,qfun,rfun,extra_args=(),epsabs=1.49e-8,
+        epsrel=1.49e-8)
+\end{verbatim}
+This is very similar to the function \code{dblquad} with the following
+differences.
+\begin{description}
+\item[\code{func3d}] --- The three-dimensional function to be
+integrated.  This function still must return a float but must now take
+three arguments in the order $(z,y,x)$.  Extra arguments can still be
+passed through \code{extra\_arguments}
+\item[\code{qfun}] --- This defines the lower surface of integration
+for the $z$ variable.  It must be a function the takes two floats in
+the order $(x,y)$ and returns a float.  Note the ``normal'' order of
+the input variables.
+\item[\code{rfun}] --- This defines the upper surface of integration
+over the $z$ variable. It also must be a function that takes two
+floats in the order $(x,y)$ and returns a float.  Note the ``normal''
+order of the input variables.
+\end{description}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% TeX-master: "main"
+%%% End: 
+
+
+
+
+
+

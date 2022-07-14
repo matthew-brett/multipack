@@ -1,0 +1,60 @@
+Multipack module
+
+Copyright (c) 1999, Travis Oliphant
+Permission is granted to distribute and copy this package under the terms 
+of the LGPL.
+
+This is an interface file to MINPACK, ODEPACK, QUADPACK, FITPACK other isolated 
+routines that seem to be generally useful.
+
+Installation:
+
+Modify the Makefile if necessary.  Only modify appropriate routines. Run make.
+
+If you already have the FORTRAN libraries installed you shouldn't compile
+them again.  Just link against them.  You can override Multipack provided 
+libraries in the Makefile.
+
+You need a FORTRAN compiler to compile the PACK libraries.  I needed to 
+link the final shared object with FORTRAN on my Linux RedHat 6.0 i586 system
+to resolve references.
+
+Other platforms may differ.  Note especially that the PACK libraries have some
+machine specific functions:  look at files in the mach directory
+
+If you know that your platform calls FORTRAN code without the underscore
+than in the flags to the C compiler set -DNO_APPEND_FORTRAN
+
+It may be possible to use f2c and a C compiler and then link with the f2c
+libraries.   NumPy provides f2c_lite.c that could likely be used.   
+
+This provides various function solvers to Python.
+Documentation is in the doc subdirectory.  There is also a lot of 
+documentation in the library subdirectories.
+
+Look at tst.py for an example of use.  Docstrings are also included in source.
+Look in the doc directory for more information.
+
+CHANGLEOG
+===============
+0.3         hybrd (solution of N-nonlinear equations in N-variables)
+            lmdif (leastsquare solution of M-nonlinear equations in N-variables)
+0.5         Added lsoda 
+                   dqag
+0.6         Changed name of all functions to _FORTRANNAME except intode which
+	      has a different name since it calls LSODA multiple times.
+            Added commented-out method-table entries for all functions
+	      intended for version 1.0
+            Added Multipack.py wrapper and called C code Cmultipackmodule.c
+0.61         Incorporated many suggestions form Pearu Peterson <pearu@ioc.ee>
+              Thanks Pearu!! and some documentation he wrote.  
+              - broke up source into multiple files
+              - fixed handling of 1-D case and error reporting
+              - derivates can be entered either across rows (default) or down
+                columns.
+              - fixed many bugs
+
+0.70        Added fitpack (ddierckx), improved integrator, 
+            added more documentation, changed structure of C-modules.
+
+

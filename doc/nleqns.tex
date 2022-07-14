@@ -1,0 +1,338 @@
+
+\section{Nonlinear sets of equations}
+\label{sec:nleqns}
+\secauthor{Pearu Peterson pearu@ioc.ee}
+
+Consider a system of $N$-nonlinear equations of $N$ unknowns
+\begin{displaymath}
+  \vec f(\vec x)=0
+\end{displaymath}
+where $\vec f(\vec x)=(f_0(\vec x),\ldots,f_{N-1}(\vec x))\tr$ and $\vec
+x=(x_0,\ldots,x_{N-1})\tr$.
+
+\subsection{Function \code{fsolve}}
+\label{sec:fsolve}
+
+\code{Multipack} provides a function \code{fsolve} for solving this
+system numerically. It is a Python-C wrapper of FORTRAN subroutines
+\code{hybrd} and \code{hybrj} of \code{minpack}\footnote{See
+\code{http://www.netlib.org/minpack/index.html}}.
+
+Function \code{fsolve} has the following definition:
+\begin{verbatim}
+fsolve(func,x0,args=(),Dfun=None,full_output=0,col_deriv=0,
+       xtol=1.49012e-8,maxfev=0,band=None,epsfcn=0.0,factor=100,diag=None)
+\end{verbatim}
+User must provide the following arguments to \code{fsolve}:
+\begin{itemize}
+\item A function \code{func} in the form
+\begin{verbatim}
+def func(x):
+    # evaluate f at x
+    return f
+\end{verbatim}
+  \code{fsolve} will call function \code{func} with a NumPy array in the argument,
+  even for $N=1$. The function must return a sequence of
+  $N$ numbers or a number if $N=1$. See also \code{args} option.
+\item An initial estimate \code{x0}. It must be a sequence of $N$
+  numbers or a number if $N=1$.
+\end{itemize}
+If the call to \code{fsolve} is successful, it will return a NumPy
+array with the solution in it (but see the option \code{full\_output}
+below). If \code{fsolve} fails, an error is raised.
+
+
+Function \code{fsolve} has the following optional input parameters:
+\begin{description}
+\item[\code{args}] --- a tuple containing additional parameters to
+  function \code{func} (and \code{Dfun}). For example, if
+\begin{verbatim}
+def func(x,a,b):
+    # evaluate f at x
+    return f
+\end{verbatim}
+  then \code{args} must be \code{(a,b)}.
+\item[\code{Dfun}] --- A function for evaluating the Jacobi
+  matrix. The function \code{Dfun} must return a matrix (a sequence of
+  sequences) containing the elements of $D\vec f(\vec x)$ where the
+  Jacobi matrix is defined as follows
+\begin{displaymath}
+D\vec f(\vec x)=\pmat{
+\ux{f_0}{x_0}&\ux{f_0}{x_1} &\ldots&\ux{f_0}{x_{N-1}}\\
+\ux{f_1}{x_0}&\ux{f_1}{x_1} &\ldots&\ux{f_1}{x_{N-1}}\\
+\vdots &\vdots&\ddots&\vdots\\
+\ux{f_{N-1}}{x_0}&\ux{f_{N-1}}{x_1}&\ldots&\ux{f_{N-1}}{x_{N-1}}
+}.
+\end{displaymath}
+Note that the derivatives run across the rows. See also
+\code{col\_deriv} option.
+\item[\code{full\_output}] --- If \code{full\_output} is set to
+  nonzero, \code{fsolve} will return a 4-tuple that contains
+  \begin{enumerate}
+  \item a NumPy array of the solution (or the result of the last
+    iteration for unsuccessful call)
+  \item a dictonary of optional outputs (statistics, etc). See below.
+  \item an integer flag about \code{fsolve} success. If it equals to
+    1, the call was successful (the solution was found). If it is not
+    equal to 1, the call was unsuccesful. Normally, the flag takes
+    the following values: 0, 1, 2, 3, 4, 5. The following message gives
+    more information.
+  \item a string message giving information about the cause of the
+    \code{fsolve} failure (if one was experienced).
+  \end{enumerate}
+  The keys of the optional output are
+  \begin{description}
+  \item[\code{'nfev'}] --- the number of calls to function \code{func};
+  \item[\code{'njev'}] --- the number of calls to jacobian function
+    \code{Dfun} (if \code{Dfun is not None});
+  \item[\code{'fvec'}] --- the function evaluated at the output;
+  \item[\code{'fjac'}] --- the orthogonal matrix \code{q} produced by
+    the QR factorization of the final approximate Jacobi matrix,
+    stored column wise;
+  \item[\code{'r'}] --- upper triangular matrix produced by QR
+    factorization of the final approximate Jacobi matrix, stored row
+    wise;
+  \item[\code{'qtf'}] --- the vector \code{(q transpose)*fvec}.
+  \end{description}
+\item[\code{col\_deriv}] --- If \code{col\_deriv} is set to nonzero
+  then it is assumed that \code{Dfun} returns a transposed Jacobi
+  matrix. This avoids a possible performance hit for large problems
+  due to the difference how Fortran and C (Python) stores matrices
+  (no tests has been carried out, yet).
+\item[\code{xtol}] --- The calculation will be terminated if the
+  relative error between two consecutive iterates is at most
+  \code{xtol} (default value is approximately $10^{-8}$).
+\item[\code{maxfev}] --- The calculation will be terminated if the
+  number of calls has reached \code{maxfev} (default values are
+  $100(N+1)$, $200(N+1)$ for \code{Dfun} given or not given,
+  respectively)
+\item[\code{band}] --- If set to a two-sequence containing the number
+  of sub- and superdiagonals within the band of the Jacobi matrix,
+  the Jacobi matrix is considered banded (only for \code{Dfun=None}). 
+\item[\code{epsfcn}] --- A suitable step length for the
+  forward-difference approximation (only for \code{Dfun=None}). If
+  \code{epsfcn} (default is \code{0.0}) is less than the machine
+  precision, it is assumed that the relative errors in the functions
+  are of the order of the machine precision.
+\item[\code{factor}] --- A parameter determing the initial step bound
+  (\code{factor*$\|$diag*x$\|$}). In most cases the \code{factor}
+  should lie in the interval (0.1,100.0); 100.0 is generally a
+  recommended value. But in failures playing with it may help.
+\item[\code{diag}] --- A sequence of $N$ positive entries that serve
+  as multiplicative scale factors for the variables.
+\end{description}
+
+\ifwithexamples
+\subsection{Examples}
+\pythonreset
+The following examples are taken from
+\code{http://www.netlib.org/minpack/ex/}.
+\begin{python}
+from Multipack import *
+from pprint import *
+\end{python}
+\begin{enumerate}
+\item Consider Rosenbrock function
+  \begin{displaymath}
+    \begin{split}
+      f_0&=1-x_0\\
+      f_1&=10(x_1-x_0^2)
+    \end{split}
+  \end{displaymath}
+  with initial estimate $\vec x^0=(-1.2,1)$.
+\begin{python}
+f=zeros(2,'d')
+df=zeros((2,2),'d')
+def F(x):
+    f[0]=1-x[0]
+    f[1]=10*(x[1]-x[0]**2)
+    return f
+\end{python}
+\begin{pythonrun}
+print fsolve(F,[-1.2,1])
+\end{pythonrun}
+The Jacobi matrix $D\vec f$ is
+\begin{displaymath}
+  D\vec f=
+  \begin{pmatrix}
+    -1 & 0 \\ -20x_0 &10
+  \end{pmatrix}
+\end{displaymath}
+\begin{python}
+def DF(x):
+    df[0]=-1,0
+    df[1]=-20*x[0],10
+    return df
+\end{python}
+\begin{pythonrun}
+x,o,i,m=fsolve(F,[-1.2,1],(),DF,full_output=1,factor=1)
+print i,':',m
+print 'x=',x
+#pprint(o)
+\end{pythonrun}
+Note that \code{fsolve} fails if \code{factor>5} in this example.
+\item Consider Powell singular function
+  \begin{displaymath}
+    \begin{split}
+      f_0&=x_0+10x_1\\
+      f_1&=\sqrt5(x_2-x_3)\\
+      f_2&=(x_1-2x_2)^2\\
+      f_3&=\sqrt{10}(x_0-x_3)^2
+    \end{split}
+  \end{displaymath}
+  with initial estimate $\vec x^0=(3,-1,0,1)$.
+\begin{python}
+f=zeros(4,'d')
+df=zeros((4,4),'d')
+def F(x):
+    f[0]=x[0]+10*x[1]
+    f[1]=sqrt(5)*(x[2]-x[3])
+    f[2]=(x[1]-2*x[2])**2
+    f[3]=sqrt(10)*(x[0]-x[3])**2
+    return f
+def DF(x):
+    df[0]=1,10,0,0
+    df[1]=0,0,sqrt(5),-sqrt(5)
+    df[2]=0,2*(x[1]-2*x[2]),4*(x[1]-2*x[2]),0
+    df[3,0]=2*sqrt(10)*(x[0]-x[3])
+    df[3,3]=df[3,0]
+    return df
+\end{python}
+\begin{pythonrun}
+print fsolve(F,[3,-1,0,1])
+\end{pythonrun}
+Let us study the cause of this failure by specifying the option
+\code{full\_output}:
+\begin{pythonrun}
+x,o,i,m=fsolve(F,[3,-1,0,1],full_output=1)
+print i,':',m
+print 'x=',x
+print 'F(x)=',F(x)
+\end{pythonrun}
+Clearly, the solution should be trivial. This example demonstrates the
+limitation of the \code{fsolve} function: it may fail for trivial
+solutions. So, it is recommended to test the problem for trivial
+solution before calling \code{fsolve}.
+\begin{pythonrun}
+x,o,i,m=fsolve(F,[3,-1,0,1],(),DF,full_output=1)
+print i,':',m
+print 'x=',x
+print 'F(x)=',F(x)
+\end{pythonrun}
+\item Consider badly scaled Powell singular function
+  \begin{displaymath}
+    \begin{split}
+      f_0&=10^4x_0x_1-1\\
+      f_1&=e^{-x_0}+e^{-x_1}-1.0001
+    \end{split}
+  \end{displaymath}
+  with initial estimate $\vec x^0=(0,1)$.
+\begin{pythonrun}
+f=zeros(2,'d')
+def F(x):
+    f[0]=1e4*x[0]*x[1]-1
+    f[1]=exp(-x[0])+exp(-x[1])-1.0001
+    return f
+print fsolve(F,[0,1])
+\end{pythonrun}
+\item Consider Wood function
+  \begin{displaymath}
+    \begin{split}
+      f_0&=-200x_0(x_1-x_0^2)-(1-x_0)\\
+      f_1&=200(x_1-x_0^2)+20.2(x_1-1)+19.8(x_3-1)\\
+      f_2&=-180x_2(x_3-x_2^2)-(1-x_2)\\
+      f_3&=180(x_3-x_2^2)+20.2(x_3-1)+19.8(x_1-1)
+    \end{split}
+  \end{displaymath}
+  with initial estimate $\vec x^0=(-3,-1,-3,-1)$
+\begin{python}
+f=zeros(4,'d')
+def F(x):
+    a=x[1]-x[0]**2
+    b=x[3]-x[2]**2
+    f[0]=-200*x[0]*a-(1-x[0])
+    f[1]=200*a+20.2*(x[1]-1)+19.8*(x[3]-1)
+    f[2]=-180*x[2]*b-(1-x[2])
+    f[3]=180*b+20.2*(x[3]-1)+19.8*(x[1]-1)
+    return f
+\end{python}
+Note that
+\begin{pythonrun}
+x,o,i,m=fsolve(F,[-3,-1,-3,-1],full_output=1)
+print i,':',m
+print 'x=',x
+#pprint(o)
+\end{pythonrun}
+but
+\begin{pythonrun}
+x,o,i,m=fsolve(F,[-3,-1,-3,-1],full_output=1,factor=99.9)
+print i,':',m
+print 'x=',x
+#pprint(o)
+\end{pythonrun}
+\item Consider Helical Valley function:
+  \begin{displaymath}
+    \begin{split}
+      f_0&=10(x_2-10 g)\\
+      f_1&=10(\sqrt{x_0^2+x_1^2}-1)\\
+      f_2&=x_2\\
+      g&=
+      \begin{cases}
+        \frac14\sign x_1 & x_0=0\\
+        \frac1{2\pi}\arctan x_1/x_0 & x_0>0\\
+        \frac1{2\pi}\arctan x_1/x_0+\frac12 & x_0<0
+      \end{cases}
+    \end{split}
+  \end{displaymath}
+  with initial estimate $\vec x^0=(-1,0,0)$
+\begin{pythonrun}
+f=zeros(3,'d')
+def F(x):
+    if x[0]==0: g=(2*(x[1]>0)-1)*0.25
+    else: g=arctan(x[1]/x[0])/(2*pi)
+    if x[0]<0: g=g+0.5
+    f[0]=10*(x[2]-10*g)
+    f[1]=10*(sqrt(x[0]**2+x[1]**2)-1)
+    f[2]=x[2]
+    return f
+print fsolve(F,[-1,0,0])
+\end{pythonrun}
+\item Consider Watson function:
+\begin{pythonrun}
+def F(x,N):
+    f=zeros(N,'d')
+    for i in range(1,30):
+        ti,s1,s2,t=i/29.0,0,0,1
+        for j in range(N):
+            s1,s2=s1+j*t*x[j],s2+t*x[j]
+            t=t*ti
+        t1,t2,t=s1-s2**2-1,2*ti*s2,1/ti
+        for k in range(N):
+            f[k]=f[k]+t*(k-t2)*t1
+            t=t*ti
+    t=x[1]-x[0]**2-1
+    f[0]=f[0]+x[0]*(1-2*t)
+    f[1]=f[0]+t
+    return f
+pprint(fsolve(F,3*[0],3))
+pprint(fsolve(F,6*[0],6))
+\end{pythonrun}
+%\item Chebquad function
+%\item Brown almost-linear function
+%\item Discrete boundary value function
+%\item Discrete integral equation function
+%\item Trigonometric function
+%\item Variably dimensioned function
+%\item Broyden tridiagonal function
+%\item Broyden banded function
+\end{enumerate}
+
+\fi
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% TeX-master: "main"
+%%% TeX-master: "main"
+%%% TeX-master: "main"
+%%% TeX-master: "main"
+%%% End: 

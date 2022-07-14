@@ -1,0 +1,77 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Wed Jun 4 22:25:30 EDT 1997
+0BTbxvhXFTalnJfQWzf5PQ	.depend
+c52dkGMDkcKa1TERiHekAA	.master
+UFPgcrf1XxPm5QRVxKfmYw	Makefile
+6G49wscaRbFAockNrxacgA	adjlr.f
+c7BO1W8s6F75ZZEggiWQQg	aigbt.f
+t6YHyYCYYQ4EyDyci3fOzQ	ainvg.f
+O5mVdfaUrP1vOvK9r+pmeg	blkdta000.f
+ICZV17BkEYavI/Cx6mI8XQ	bnorm.f
+jkMtC/8Qf3Y9KjoKy6VzzA	cdrv.f
+lATYnQdtKUE+E+I50N/gDw	cfode.f
+qLJ+3Z+U/w2jOMxTOiqE0Q	changes
+X/O77Pjn9Uqq8qS8KFM+Ag	cntnzu.f
+EwzKPB7aIRIcB2GpTrFtFQ	decbt.f
+X6otD7OseSLs1EAJf1jKhg	demo.f
+n0B6y3vcP0gQpig4iVsSog	doc
+I1g5+GGsWRdG/ZrDz9TOeA	ewset.f
+2gzsyLWVjoI+jMtfueU/hA	fnorm.f
+x2rA2KNCvih72oLUzMopXQ	index
+qkNL505NVXwQ1776P6YE3w	intdy.f
+xLIT2qFaqcqTl/tc3s6Rsg	iprep.f
+z1bZDZ29NIvYQQcTdZdI4g	jgroup.f
+TZAbGXR2kVX6FEmxURL+ew	lsoda.f
+TUWo3OopFnAVfCqAmoLnqw	lsodar.f
+svs5UHCXlZ6r3Lf62BxuJQ	lsode.f
+OMiignjAwWrXdtqWIMiKvA	lsodes.f
+zukwI4kVX5rmdlg19NFjgw	lsodi.f
+YXSYJ/KkS2EGfWAliwNDLA	lsoibt.f
+Y/2FoggF406kz85TxAXZEw	md.f
+PdLUuExDzzuQVEE6UKUN/g	mdi.f
+Zt8yW9MchM6Srtix49UUDQ	mdm.f
+RsQFU/ngaAOSOGxM0IWGRg	mdp.f
+ibzGUcJ/26gUT8o1gVBA4A	mdu.f
+FidOccdo4OynYLXlnJ4QoQ	nnfc.f
+10Ak838i1y6TY6TD/VEzQA	nnsc.f
+eeVnwUWcg13HMEHdOaE7vQ	nntc.f
+WLGPIt4855QNCKV+pqvU6A	nroc.f
+DWuaNXDQQjOGDatG4AAI4A	nsfc.f
+UpwvpJAdgkUQpH4mZJoiaw	odrv.f
+0BdFV2fAFKTw3huZ+lGmrA	pjibt.f
+TVd4i8sOij7AJr5FMCYf/g	prep.f
+Gqs9p33gSM+Xxl0H872RKw	prepj.f
+bFt0P0o58dyCnfVnBK6YyA	prepji.f
+hZcPB9SYUflqItOcyKv8oA	prja.f
+bkgAxdu6MPM4/JVwh41Bcw	prjs.f
+8n6wNsu5TtYnmBage5e05A	rchek.f
+2DwVm4Xu/u32xuD5QVaMdA	readme
+AMvyayIxNYKQ+xAZMTvFLg	roots.f
+3U64z3h7UrNYNZtNo6Fdrw	slsbt.f
+FSAEPltybQf8bLU7CtdfgQ	slss.f
+g/7U6RrYm+aMvxqSnMyVSQ	solbt.f
+4yiUXFjGqXpJZNVSxrx4aw	solsy.f
+sC/JlpNxqzZLr78LdgHKyA	srcar.f
+VJBomsZeoZ1pT7rWNAs53g	srcma.f
+HPH7mfnPwl6IBliheMd2Ww	srcms.f
+ld0ESA45aCQpwebJIXv7Cg	srcom.f
+AUKDDJtDT96cZZoULfaLyg	sro.f
+7ZGMStyyXQ/4WFT68GdDmw	stoda.f
+1q0T89v6qrV6sXAlTqisiw	stode.f
+qoI5EXz8NixOtD8UUNfPFA	stodi.f
+TeiJ6kZK3Rxp65tTGtcYOw	vmnorm.f
+yrdfctoERZFaxnnpHGqd8A	vnorm.f
+CpoZHYcXGHYERpk9CAurMQ	xerrwv.f
+egpk/4A+/JEsZXRifcICMQ	xsetf.f
+/KJUI0VHgDrLVM5008gy5A	xsetun.f
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBM5YjnL5pvxO9gjtZAQHPGgP+KRhPtHLxMb+R3Tc6M2+T74lDUa/zqlPd
+R5auCHuk0ggZjUIg+KxQ/ESakyRypU/1WvYF1beeaMN/sypP4eMsj09Nwdrzlo20
+LgsSj6Ua9K545zHyt6mbSwdRkpFzQd9ithHDXwpSZboZMASSRgXRWNDXK28V6Dw0
+ReS7adDeKN4=
+=56Ru
+-----END PGP SIGNATURE-----

@@ -1,0 +1,303 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% pythonrun v1.1 - "Run Python code from LaTeX"
+% Home site: http://koer.ioc.ee/~pearu/python
+%
+% Copyright (C) 1999 Pearu Peterson all rights reserved
+% Pearu Peterson <pearu@ioc.ee>
+% Permission to use, modify, and distribute this software is given under the
+% terms of the LGPL.  See http://www.fsf.org
+%
+% NO WARRANTY IS EXPRESSED OR IMPLIED.  USE AT YOUR OWN RISK.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% The following environments are provided:
+%
+%   python  
+%   python* 
+%   pythonrun
+%   pythonrun*
+%   pythonrunwithsave
+%   pythonrunwithsave*
+%   pythoncall
+%   pythonlatex (only when `distil' option is used)
+%
+% The following commands are provided:
+%
+%   \pythoninput
+%   \pythoninput*
+%   \pythonsave
+%   \pythonreset
+%   \pythonclean
+%   \pythonline
+%
+% See "pythonrun.sty User's Guide"
+%
+% Run latex with --shell-escape option in order to execute python code.
+%    
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pythonrun}[1999/05/28 "Run Python from LaTeX v1.1" Pearu Peterson]
+\@ifundefined{verbatim@processline}{\RequirePackage{verbatim}}{}
+
+\newif\ifshellescape
+\newif\ifpythondistil
+\DeclareOption{distil}
+{\global\pythondistiltrue}
+\ProcessOptions
+\immediate\write18{> pythonrun.shellescapetest}
+\IfFileExists{pythonrun.shellescapetest}%
+{\global\shellescapetrue}{\global\shellescapefalse}
+\immediate\write18{rm -f pythonrun.shellescapetest}
+\ifshellescape\else
+\typeout{****************************************************}
+\typeout{Use --shell-escape to run Python from LaTeX}
+\typeout{****************************************************}
+\fi
+\newcounter{runpython@id}
+\newcounter{runpython@lineno}
+\newcounter{runpython@lines}
+\newwrite\runpython@out
+\newwrite\pythonlatex@out
+\newread\runpython@in
+
+\def\runpythonfn{_pythonrun.tmp}
+%\def\backslashchar{\@backslashchar}
+
+\def\countfilelines#1{
+  \setcounter{runpython@lines}{0}
+  \IfFileExists{#1}{
+  \openin\runpython@in=#1\relax
+  \ifeof\runpython@in\else
+  \loop
+  \read\runpython@in to \runpython@line
+  \if\ifeof\runpython@in F\else T\fi T\stepcounter{runpython@lines}
+  \repeat
+  \fi
+  \closein\runpython@in
+  }{}}
+
+\def\verbatimwrite{%
+  \begingroup
+  \@bsphack
+  \let\do\@makeother\dospecials
+  \catcode`\^^M\active \catcode`\^^I=12
+  \verbatim@start}
+\def\endverbatimwrite{%
+  \@esphack
+  \endgroup}
+
+\ifpythondistil
+\typeout{******* Starting pythonrun.sty in distiller mode *******}
+\immediate\openout\pythonlatex@out tmp_pythonrun_distil1.tex
+\newenvironment{pythonlatex}{%
+  \def\verbatim@processline{%
+    \immediate\write\pythonlatex@out{\the\verbatim@line}}
+  \verbatimwrite}{\endverbatimwrite%
+  \def\verbatim@processline{\the\verbatim@line\par}}
+
+\newcommand{\readpythonfile}[1]{
+  \immediate\write\pythonlatex@out{\@backslashchar begin{verbatim}}
+  \def\verbatim@processline{
+    \stepcounter{runpython@lineno}%
+    \ifnum\therunpython@lineno<10%
+    \immediate\write\pythonlatex@out{\space\space\therunpython@lineno:\space\space\the\verbatim@line}%
+    \else\ifnum\therunpython@lineno<100%
+    \immediate\write\pythonlatex@out{\space\therunpython@lineno:\space\space\the\verbatim@line}%
+    \else\immediate\write\pythonlatex@out{\therunpython@lineno:\space\space\the\verbatim@line}%
+    \fi\fi%
+    \leavevmode
+    \llap{{\sc\scriptsize\therunpython@lineno}}\ \hskip\@totalleftmargin
+    \the\verbatim@line\par}
+  \verbatiminput{#1}
+  \def\verbatim@processline{\the\verbatim@line\par}
+  \immediate\write\pythonlatex@out{\@backslashchar end{verbatim}}
+}
+\else
+\newcommand{\readpythonfile}[1]{
+  \def\verbatim@processline{
+    \stepcounter{runpython@lineno}%
+    \leavevmode
+    \llap{{\sc\scriptsize\therunpython@lineno}}\ \hskip\@totalleftmargin
+    \the\verbatim@line\par}
+  \verbatiminput{#1}
+  \def\verbatim@processline{\the\verbatim@line\par}
+}
+\fi
+\def\pythoninputquite#1#2{%
+  \countfilelines{#2}
+  \addtocounter{runpython@lineno}{\therunpython@lines}
+  \immediate\write18{echo #2 >> \runpythonfn.ids}}
+\def\pythoninputshow#1{\readpythonfile{#1}\immediate\write18{echo #1 >> \runpythonfn.ids}}
+\def\pythoninput{\@ifstar{\pythoninputquite\relax}{\pythoninputshow}}
+
+\newenvironment{python}{
+  \stepcounter{runpython@id}
+  \def\fn{\runpythonfn.id.\therunpython@id}
+  \immediate\openout\runpython@out \fn
+  \def\verbatim@processline{%
+    \immediate\write\runpython@out{\the\verbatim@line}
+    }
+  \verbatimwrite}{
+  \immediate\closeout\runpython@out
+  \endverbatimwrite
+  \def\verbatim@processline{\the\verbatim@line\par}
+  \immediate\write18{echo \fn >> \runpythonfn.ids}
+  \readpythonfile{\fn}
+}
+\newenvironment{python*}{
+  \stepcounter{runpython@id}
+  \def\fn{\runpythonfn.id.\therunpython@id}
+  \immediate\openout\runpython@out \fn
+  \def\verbatim@processline{%
+    \stepcounter{runpython@lineno}
+    \immediate\write\runpython@out{\the\verbatim@line}
+    }
+  \verbatimwrite}{
+  \immediate\closeout\runpython@out
+  \endverbatimwrite
+  \def\verbatim@processline{\the\verbatim@line\par}
+  \immediate\write18{echo \fn >> \runpythonfn.ids}
+}
+\newenvironment{pythonrun}{
+  \stepcounter{runpython@id}
+  \def\fn{\runpythonfn.id.\therunpython@id}
+  \immediate\openout\runpython@out \fn
+  \def\verbatim@processline{%
+    \immediate\write\runpython@out{\the\verbatim@line}}
+  \verbatimwrite}{
+  \immediate\closeout\runpython@out
+  \endverbatimwrite
+  \def\verbatim@processline{\the\verbatim@line\par}
+  \readpythonfile\fn
+  \runpythonout\fn
+  \ifpythondistil
+  \immediate\write\pythonlatex@out{\@backslashchar begin{verbatim}}
+  \def\verbatim@processline{\immediate\write\pythonlatex@out{\the\verbatim@line}}
+  \verbatiminput{\runpythonfn.py.out}
+  \immediate\write\pythonlatex@out{\@backslashchar end{verbatim}}
+  \else
+  \verbatiminput{\runpythonfn.py.out}
+  \fi
+  \countfilelines{\fn}
+  \addtocounter{runpython@lineno}{-\therunpython@lines}
+}
+\newenvironment{pythonrun*}{
+  \stepcounter{runpython@id}
+  \def\fn{\runpythonfn.id.\therunpython@id}
+  \immediate\openout\runpython@out \fn
+  \def\verbatim@processline{%
+    \immediate\write\runpython@out{\the\verbatim@line}
+    }
+  \verbatimwrite}{
+  \immediate\closeout\runpython@out
+  \endverbatimwrite
+  \def\verbatim@processline{\the\verbatim@line\par}
+  \runpythonout\fn
+  \ifpythondistil
+  \immediate\write\pythonlatex@out{\@backslashchar begin{verbatim}}
+  \def\verbatim@processline{\immediate\write\pythonlatex@out{\the\verbatim@line}}
+  \verbatiminput{\runpythonfn.py.out}
+  \immediate\write\pythonlatex@out{\@backslashchar end{verbatim}}
+  \else
+  \verbatiminput{\runpythonfn.py.out}
+  \fi}
+\newenvironment{pythonrunwithsave}{
+  \stepcounter{runpython@id}
+  \def\fn{\runpythonfn.id.\therunpython@id}
+  \immediate\openout\runpython@out \fn
+  \def\verbatim@processline{%
+    \immediate\write\runpython@out{\the\verbatim@line}}
+  \verbatimwrite}{
+  \immediate\closeout\runpython@out
+  \endverbatimwrite
+  \def\verbatim@processline{\the\verbatim@line\par}
+  \readpythonfile\fn
+  \runpythonout\fn
+  \immediate\write18{echo \fn >> \runpythonfn.ids}
+  \ifpythondistil
+  \immediate\write\pythonlatex@out{\@backslashchar begin{verbatim}}
+  \def\verbatim@processline{\immediate\write\pythonlatex@out{\the\verbatim@line}}
+  \verbatiminput{\runpythonfn.py.out}
+  \immediate\write\pythonlatex@out{\@backslashchar end{verbatim}}
+  \else
+  \verbatiminput{\runpythonfn.py.out}
+  \fi}
+\newenvironment{pythonrunwithsave*}{
+  \stepcounter{runpython@id}
+  \def\fn{\runpythonfn.id.\therunpython@id}
+  \immediate\openout\runpython@out \fn
+  \def\verbatim@processline{%
+    \immediate\write\runpython@out{\the\verbatim@line}
+    }
+  \verbatimwrite}{
+  \immediate\closeout\runpython@out
+  \endverbatimwrite
+  \def\verbatim@processline{\the\verbatim@line\par}
+  \runpythonout\fn
+  \immediate\write18{echo \fn >> \runpythonfn.ids}
+  \ifpythondistil
+  \immediate\write\pythonlatex@out{\@backslashchar begin{verbatim}}
+  \def\verbatim@processline{\immediate\write\pythonlatex@out{\the\verbatim@line}}
+  \verbatiminput{\runpythonfn.py.out}
+  \immediate\write\pythonlatex@out{\@backslashchar end{verbatim}}
+  \else
+  \verbatiminput{\runpythonfn.py.out}
+  \fi}
+\def\runpythonout#1{
+  \immediate\write18{cat `cat \runpythonfn.ids`\space #1 >\runpythonfn.py}
+  \immediate\write18{python \runpythonfn.py > \runpythonfn.py.out 2>&1}
+}
+\def\pythonsave#1{\immediate\write18{cat `cat \runpythonfn.ids` > #1}}
+
+\newenvironment{pythoncall}{%
+  \stepcounter{runpython@id}%
+  \def\fn{\runpythonfn.id.\therunpython@id}%
+  \immediate\openout\runpython@out \fn%
+  \def\verbatim@processline{\immediate\write\runpython@out{\the\verbatim@line}}%
+  \verbatimwrite}{%
+  \immediate\closeout\runpython@out%
+  \endverbatimwrite%
+  \def\verbatim@processline{\the\verbatim@line\par}%
+  \ifshellescape%
+  \runpythonout\fn%
+  \openin\runpython@in=\runpythonfn.py.out\relax%
+  {\ifpythondistil\let\do\@makeother\dospecials\fi%
+  \ifeof\runpython@in\else%
+  \loop\read\runpython@in to \runpython@line%
+  \if\ifeof\runpython@in F\else T\fi T%
+  \ifpythondistil\immediate\write\pythonlatex@out{\runpython@line}\else%
+  \runpython@line\fi\repeat%
+  \fi%
+  \closein\runpython@in}%
+  \fi}
+
+\newcommand{\pythonline}[1]{%
+  \stepcounter{runpython@id}
+  \def\fn{\runpythonfn.id.\therunpython@id}
+  \immediate\openout\runpython@out \fn
+  \immediate\write\runpython@out{#1}
+  \immediate\closeout\runpython@out
+  \ifshellescape
+  \runpythonout\fn%
+  \openin\runpython@in=\runpythonfn.py.out\relax%
+  {\ifpythondistil\let\do\@makeother\dospecials\fi%
+  \ifeof\runpython@in\else%
+  \loop\read\runpython@in to \runpython@line%
+  \if\ifeof\runpython@in F\else T\fi T%
+  \ifpythondistil\immediate\write\pythonlatex@out{\runpython@line}\else%
+  \runpython@line\fi\repeat%
+  \fi%
+  \closein\runpython@in}%
+  \fi}
+\def\pythonclean{\immediate\write18{rm -f \runpythonfn.*}}
+\def\pythonreset{%
+  \pythonclean%
+  \setcounter{runpython@id}{0}%
+  \setcounter{runpython@lineno}{0}%
+  \setcounter{runpython@lines}{0}%
+  \immediate\write18{echo \runpythonfn.header.py > \runpythonfn.ids}%
+  \immediate\write18{echo "## This python file is created by pythonrun.sty" > \runpythonfn.header.py}}
+
+\pythonreset
+
+%% EOF pythonrun.sty
+

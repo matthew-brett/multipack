@@ -1,0 +1,373 @@
+
+
+\section{B-splines (univariate)}
+\label{sec:fitpack}
+\secauthor{Pearu Peterson, pearu@ioc.ee}
+
+Consider a graph of the function $y=y(x)$ given by the set of sample
+points $(\vec x,\vec y)$ where $\vec x=(x_0,\ldots,x_{m-1})$, $\vec 
+y=(y_0,\ldots,y_{m-1})$ and $x_i<x_{i+1}, \forall i$ is assumed.
+The problem is to find a B-spline
+\begin{displaymath}
+  s(x)=S_k(x;\vec t,\vec c)
+\end{displaymath}
+that on the interval $[x_b,x_e]\supseteq [x_0,x_{m-1}]$ approximates
+the curve $y=y(x)$ that is given by the set of sample points (possibly
+with measurment errors).  Here $k$ denotes the degree of the spline,
+$\vec t=(t_0,\ldots,t_{n-1})$ and $\vec c=(c_0,\ldots,c_{n-k-2})$ are
+the positions of the knots and B-spline coefficients of the spline
+$s(x)$, respectively. The errors of sample points are given by the set
+of positive numbers $\vec w=(w_0,\ldots,w_{m-1})$. If $d_i$ is an
+estimate of the standard deviation of $y_i$, $w_i=1/d_i$ is taken.
+Two problems can be stated:
+\begin{enumerate}
+\item (\code{task=-1}) Find the coefficients $\vec c$ of the weighted
+  least-square spline $s(x)$ if data points $(\vec x,\vec y)$, weights
+  $\vec w$, and knots $\vec t$ are given.
+\item (\code{task=0,1}) Find the coefficients $\vec c$ and the knots
+  $\vec t$ of the smoothing spline $s(x)$ if $(\vec x,\vec y)$, and
+  $\vec w$ are given. The smoothness of $s(x)$ is achieved by
+  minimalizing the discontinuity jumps of the $k$-th derivative of
+  $s(x)$ at the knots $(t_{k+1},\ldots,t_{n-k-2})$. The amount of
+  smoothness is determined by the condition
+  \begin{displaymath}
+    f_p=\sum_{i=0}^{m-1}\abs{w_i(y_i-s(x_i))}^2\leqslant s
+  \end{displaymath}
+  where nonnegative $s$ is the smoothing factor.
+\end{enumerate}
+
+One can consider also curves in higher dimensions than two. Then (but
+not only) it is more natural to consider a curve being given
+parametrically:
+\begin{displaymath}
+  (x_0,\ldots,x_{d-1})=(x_0(u),\ldots,x_{d-1}(u)),\qquad u\in[u_b,u_e]\in\R.
+\end{displaymath}
+In numerics this introduces a $d$-set of $m$-sample points $\vec
+x_i,i=0,\ldots,d-1$ that can be used for finding approximating splines
+for each coordinate functions:
+\begin{displaymath}
+ x_i(u)\simeq s_i(u)\equiv S_{ki}(u;\vec t,\vec c_i),\qquad i=0,\ldots,d-1. 
+\end{displaymath}
+
+
+\subsection{Overview of functions}
+\label{sec:fitpack_short}
+
+\newcommand{\Skx}{S_k(x; \vec t, \vec c)}
+\begin{displaymath}
+  \begin{split}
+    \vec t, \vec c, k &=\text{\code{tck=splrep(x,y)}}\\
+    \Skx &=\text{\code{splev(x,tck)}}\\
+    \nUx q{}x\Skx &=\text{\code{splev(x,tck,q)}}\\
+    \int_a^b \Skx\,dx &=\text{\code{splint(a,b,tck)}}\\
+    \{x : \Skx=0\}&=\text{\code{sproot(tck)}}\\
+    \left\{\nUx q{}x\Skx: q=0,\ldots,k\right\}&=\text{\code{spalde(tck,x)}}\\
+    \vec t, \{\vec c_i : i=0\ldots d-1\}, k, \vec u
+    &=\text{\code{tcik,u=splprep(x)}}\\ 
+    \left\{S_{ki}(u; \vec t, \vec c_i) : i=0\ldots d-1\right\}
+    &=\text{\code{splev(u,tcik)}}\\ 
+    \left\{\nUx q{}uS_{ki}(u; \vec t, \vec c_i) : i=0\ldots d-1\right\}
+    &=\text{\code{splev(u,tcik,q)}}
+  \end{split}
+\end{displaymath} 
+
+\subsection{Function \code{splrep}}
+\label{sec:splrep}
+
+\code{Multipack} provides a function \code{splrep} for finding the
+B-spline representation of the data points. It is a Python-C wrapper
+of FORTRAN subroutines \code{splrep} and \code{percur} of
+\code{fitpack}\footnote{In Netlib known as \code{dierckx}.}.  Function
+\code{splrep} has the following definition:
+\begin{verbatim}
+splrep(x,y,w=None,xb=None,xe=None,k=3,task=0,s=None,t=None,
+       full_output=0,nest=None,per=0)
+\end{verbatim}
+
+Function \code{splrep} returns a list \code{[t,c,k]} where \code{t} is
+an array of knots, \code{c} is an array of B-spline coefficients, and
+\code{k} is the degree of the spline.
+
+Function \code{splrep} has the following input parameters:
+\begin{description}
+\item[\code{x,y}] --- Arrays of data points.
+\item[\code{w}] --- An array of weigths. Default is
+  \code{ones(len(x))}.
+\item[\code{xb,xe}] --- End points of the approximation
+  interval. By default \code{xb,xe=x[0],x[-1]}.
+\item[\code{task}] By default \code{task=0}. This flag has the
+  following meaning:
+  \begin{description}
+  \item[\code{task=0}] --- Find \code{t,c} for smoothing factor
+    \code{s}
+  \item[\code{task=1}] --- Find \code{t,c} for another value of the
+    smoothing factor \code{s}. There must been a call with
+    \code{task=0} or \code{task=1} for given set of data, previously.
+  \item[\code{task=-1}] --- Find \code{c} for given set of knots
+    \code{t}.
+  \end{description}
+\item[\code{t}] --- An array of knots. Only for \code{task=-1}. It
+  must satisfy the Schoenberg-Whitney conditions, i.e. there must be a
+  subset of data points $\{x'_j\}_{j=0}^{n-k}$ such that
+  $t_j<x'_j<t_{j+k}$, $\forall j=0,\ldots,n-k$. Also
+  $x_b<t_{k+1}<\ldots<t_{n-k}<x_e$ must hold. Here $n$ is the number
+  of knots.
+\item[\code{s}] --- A smoothing factor. It must have a nonnegative
+  value. Default is \code{len(x)}. Only for \code{task=0,1}.
+\item[\code{k}] --- The degree of the spline ($1\leqslant k\leqslant
+  5$). By default \code{k=3}. Even degrees are strongly not
+  recommended, however.
+\item[\code{full\_output}] --- If it is set to nonzero, \code{splrep}
+  will return 4-tuple that contains:
+  \begin{enumerate}
+  \item A list \code{tck=[t,c,k]}.
+  \item A float \code{fp}.
+  \item An integer flag about \code{splrep} success. It is succesful
+    if the value of the flag is 0, -1, or -2. If it is 1, 2, or 3
+    error occurred but not raised. Otherwise error is raised. See also
+    the following message.
+  \item A string message.
+  \end{enumerate}
+\item[\code{nest}] --- Should be an over-estimate of the total number
+  of knots of the spline returned, to indicate the storage space
+  available to the routine. Be default \code{nest=m/2}.
+\item[\code{per}] --- If set to nonzero, data points are considered
+  periodic with period $x_{m-1}-x_0$. \code{splrep} will return a
+  smooth periodic spline approximation. Note that values of
+  \code{y[m-1]} and \code{w[m-1]} are not used.
+\item[\code{quite}] --- An integer flag that if set to zero, prints
+  some information about the success of the call to \code{splrep}.
+\end{description}
+Discussion of about choosing the values of the parameters \code{s},
+\code{task=1} can be found in file \code{splrep.f}, section
+'further comments'.
+
+
+\subsection{Function \code{splprep}}
+\label{sec:splprep}
+
+
+
+\code{Multipack} provides a function \code{splprep} for finding the
+B-spline representation of the data points given parametrically. It is
+a Python-C wrapper of FORTRAN subroutine \code{parcur} of
+\code{fitpack}\footnote{In Netlib known as \code{dierckx}.}.  Function
+\code{splprep} has the following definition:
+\begin{verbatim}
+splprep(x,w=None,u=None,ub=None,ue=None,k=3,task=0,s=None,t=None,
+           full_output=0,nest=None,quite=1)
+\end{verbatim}
+
+Function \code{splprep} returns a 2-tuple \code{([t,c,k],u)} where \code{t} is
+an array of knots, \code{c} is an array of B-spline coefficients, 
+\code{k} is the degree of the spline, and \code{u} is an array of
+the values of the parameter.
+
+Functions \code{splprep} has the following additional input
+parameters:
+\begin{description}
+\item[\code{x}] --- A list of sample vector arrays.
+\item[\code{u}] --- An array of parameter values. By default a unit
+  interval is assumed with automatically choosen distribution.
+\item[\code{ub,ue}]  --- The endpoints of parameters interval. Defaults
+  are 0 and 1.
+\item[\code{full\_output}] --- If it is set to nonzero, \code{splprep}
+  will return 5-tuple that contains:
+  \begin{enumerate}
+  \item A list \code{tck=[t,c,k]}.
+  \item An array \code{u}.
+  \item A float \code{fp}.
+  \item An integer flag about \code{splrep} success. It is succesful
+    if the value of the flag is 0, -1, or -2. If it is 1, 2, or 3
+    error occurred but not raised. Otherwise error is raised. See also
+    the following message.
+  \item A string message.
+  \end{enumerate}
+\end{description}
+
+\subsection{Function \code{splev}}
+\label{sec:splev}
+
+\code{Multipack} provides a function \code{splev} for evaluating a
+spline and its derivatives up to order $k$.
+It is a Python-C wrapper of FORTRAN subroutines \code{splev} and
+\code{splder} of \code{fitpack}.
+Function \code{splev} has the following definition:
+\begin{verbatim}
+splev(x,tck,der=0)
+\end{verbatim}
+
+Function \code{splev} returns an array of values of the spline
+function (if \code{der=0}) or its derivatives (if \code{der>0}) at
+points given by the array \code{x}. \code{tck} is a 3-list returned by
+the function \code{splrep} and it should contain the knots \code{t},
+the coefficients \code{c}, and the degree \code{k} of the
+corresponding spline.
+
+\subsection{Function \code{splint}}
+\label{sec:splint}
+
+\code{Multipack} provides a function \code{splint} for calculating the
+integral of the spline $s(x)$:
+\begin{displaymath}
+  \int_a^b S_k(x;\vec t,\vec c)\,dx.
+\end{displaymath}
+It is a Python-C wrapper of FORTRAN subroutine \code{splint} of \code{fitpack}.
+Function \code{splint} has the following definition:
+\begin{verbatim}
+splint(a,b,tck,full_output=0)
+\end{verbatim}
+where \code{a,b} are the end points of the integration interval,
+\code{tck} is a list describing the given spline (see above) and if
+\code{full\_output} is set to nonzero, the function \code{splint} will
+return the integral and an array containing the integrals of the
+normalized B-splines defined on the set of knots. Otherwise, just the
+value of the integral is returned. Note that $s(x)$ is considered to
+be identically zero outside the interval $[t_{k},t_{n-k-1}]$.
+
+\subsection{Function \code{sproot}}
+\label{sec:sproot}
+
+\code{Multipack} provides a function \code{sproot} for finding the
+roots of a \emph{cubic} B-spline $s(x)$.
+It is a Python-C wrapper of FORTRAN subroutine \code{sproot} of \code{fitpack}.
+Function \code{sproot} has the following definition:
+\begin{verbatim}
+sproot(tck,mest=10)
+\end{verbatim}
+where \code{tck} is a list describing the given spline (see above) and
+\code{mest} is an estimate for the number of zeros.
+Function \code{sproot} will return an array of found zeros. Note that
+the following restrictions must hold: \code{len(t)>=8} and
+$t_0\leqslant\ldots\leqslant t_3<t_4<\ldots<t_{n-4}\leqslant
+t_{n-3}\leqslant\ldots\leqslant t_{n-1}$.
+
+\subsection{Function \code{spalde}}
+\label{sec:spalde}
+
+\code{Multipack} provides a function \code{spalde} for evaluating all
+derivatives $s^{(j)}(x),j=0,\ldots,k$ at a point (or set of points) $x$
+of a spline $s(x)=S_k(x;\vec t,\vec c)$.
+It is a Python-C wrapper of FORTRAN subroutine \code{spalde} of \code{fitpack}.
+Function \code{spalde} has the following definition:
+\begin{verbatim}
+spalde(tck,x)
+\end{verbatim}
+where \code{tck} is a list describing the given spline (see
+\code{splrep}) and \code{x} is a float or a list of floats where
+derivatives should be evaluated.  Function \code{spalde} will return
+an array (or a list of arrays) containing all the derivatives for each
+point in \code{x}.  Note that the following restrictions must hold:
+$t_k\leqslant x\leqslant t_{n-k+1}$.
+
+\section{B-splines (bivariate)}
+\label{sec:fitpack2}
+\secauthor{Pearu Peterson, pearu@ioc.ee}
+
+Consider a surface $z=f(x,y)$ given by a set of sample points $(\vec
+x,\vec y,\vec z)$ where $\vec x=(x_0,\ldots,x_{m-1})$, analogously are
+given $\vec y, \vec z$. The order of data points is immaterial.
+\code{Multipack} functions below can be used for finding (in various
+ways) a bivariate B-spline
+\begin{displaymath}
+  s(x,y)=S_{k_x,k_y}(x,y;\vec t_x,\vec t_y,\vec c)
+\end{displaymath}
+defined on the rectangular region $[x_b,x_e]\times[y_b,y_e]\ni
+(x_i,y_i)\forall i$ that approximates the function $f(x,y)$.
+$k_x,k_y$ are the degrees of the spline and $\vec t_x$, $\vec t_y$ are
+the knots with respect to the corresponding axes.
+
+\subsection{Overview of functions}
+\label{sec:fitpack2_short}
+
+\newcommand{\Skxy}{S_{k_x,k_y}(x,y;\vec t_x,\vec t_y,\vec c)}
+\begin{displaymath}
+  \begin{split}
+    \vec t_x, \vec t_y, \vec c, k_x, k_y &=
+    \text{\code{tck=bisplrep(x,y,z)}}\\
+    \Skxy &= \text{\code{bisplev(x,y,tck)}}\\
+    \nmuxy pq{}xy\Skxy &= \text{\code{bisplev(x,y,tck,p,q)}}
+  \end{split}
+\end{displaymath}
+
+\subsection{Function \code{bisplrep}}
+\label{sec:bisplrep}
+
+
+\code{Multipack} provides a function \code{bisplrep} for finding the
+bivariate B-spline representation for given set of data points.  It is
+a Python-C wrapper of FORTRAN subroutine \code{surfit} of
+\code{fitpack}.  Function \code{bisplrep} has the following definition:
+\begin{verbatim}
+bisplrep(x,y,z,w=None,xb=None,xe=None,yb=None,ye=None,kx=3,ky=3,task=0,s=None,
+        eps=1e-16,tx=None,ty=None,full_output=0,nxest=None,nyest=None,quite=1)
+\end{verbatim}
+On succesful call it will return a list \code{[tx,ty,c,kx,ky]} where
+\code{tx}, \code{ty} are arrays of knots, \code{c} is an array of
+B-spline coefficients, and \code{kx}, \code{ky} are the degrees of the
+spline.
+
+Function \code{bisplrep} has the following input parameters:
+\begin{description}
+\item[\code{x,y,z}] --- Arrays of data points.
+\item[\code{w}] --- An array of weigths. By default
+  \code{w=ones(len(x))}.
+\item[\code{xb,xe,yb,ye}] --- End points of the approximation
+  intervals. By default \code{xb,xe,yb,ye= x[0],x[-1],y[0],y[-1]}.
+\item[\code{kx,ky}] --- The degrees of the spline ($1\leqslant k_x,k_y
+  \leqslant 5$).
+\item[\code{task}] --- By default \code{task=0}. This flag has the
+  following meaning:
+  \begin{description}
+  \item[\code{task=0}] Find \code{tx,ty,c} for smoothing factor
+    \code{s}.
+  \item[\code{task=1}] Find \code{tx,ty,c} for another value of the
+    smoothing factor \code{s}.
+  \item[\code{task=-1}] Find \code{c} for given set of knots \code{kx,ky}.
+  \end{description}
+\item[\code{s}] --- A nonnegative smoothing factor. Only for
+  \code{task=0,1}.
+\item[\code{eps}] --- A threshold for determing the effective rank of an
+  over-determined linear system of equations. \code{0<eps<1}. Not
+  likely to be changed.
+\item[\code{tx,ty}] --- Arrays of the knots of the spline. Only for
+  \code{task=-1}.
+\item[\code{full\_output}] --- If set to nonzero, \code{bisplrep} wil
+  return a 4-tuple that contains:
+  \begin{enumerate}
+  \item A list \code{tck=[tx,ty,c,kx,ky]}.
+  \item A float \code{fp}.
+  \item An integer flag about \code{splrep} success. It is succesful
+    if the value of the flag is 0, -1, or -2. If it is 1, 2, 3, 4, or 5
+    error occurred but not raised. Otherwise error is raised. See also
+    the following message.
+  \item A string message.
+  \end{enumerate}
+\item[\code{nxest,nyest}] --- Over-estimates of the total number of
+  knots.
+\item[\code{quite}] --- If set to zero, the function will print more
+  information about the success of the call.
+\end{description}
+
+\subsection{Function \code{bisplev}}
+\label{sec:bisplev}
+
+\code{Multipack} provides a function \code{bisplev} for evaluating a
+spline and its derivatives. It is a Python-C wrapper of FORTRAN
+subroutines \code{bispev} and \code{parder} of
+\code{fitpack}. Function \code{bisplev} has the following definition:
+\begin{verbatim}
+bisplev(x,y,tck,dx=0,dy=0)
+\end{verbatim}
+In general, it will return a two-dimensional array of spline function
+(or its derivatives) values at points given by cross-product of
+\code{x} and \code{y}. In special cases the function may return an
+array or just a float if either \code{x} or \code{y}, or both are
+floats. \code{tck} should be a 5-list returned by \code{bisplrep} and
+\code{dx, dy} determine the orders of partial derivatives. 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% TeX-master: "main"
+%%% End: 

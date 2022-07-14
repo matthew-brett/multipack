@@ -1,0 +1,40 @@
+
+
+\section{Minimization of Functions}
+\label{sec:fmini}
+\secauthor{Pearu Peterson pearu@ioc.ee}
+
+Consider a set of $M$-nonlinear functions with $N$-vector as an argument
+\begin{displaymath}
+\vec f=\vec f(\vec x)
+\end{displaymath}
+where $\vec f(\vec x)=(f_0(\vec x),\ldots,f_{M-1}(\vec x))\tr$ and
+$\vec x=(x_0,\ldots,x_{N-1})\tr$.
+Let us define a functional
+\begin{displaymath}
+F(\vec x)=\vec f\tr{}\vec f\equiv\sum_{i=0}^{M-1} \abs{f_i(\vec x)}^2
+\end{displaymath}
+and consider a minimization problem of the functional $F$:
+\begin{displaymath}
+\vec x^*=\arg \min_{\vec x\in\R^N} F(\vec x).
+\end{displaymath}
+
+\subsection{Function \code{leastsq}}
+\label{sec:leastsq}
+
+\code{Multipack} provides a function \code{leastsq} for solving this
+problem numerically. It is a Python-C wrapper of FORTRAN subroutines
+\code{lmdif} and \code{lmder} of \code{minpack}.
+
+Function \code{leastsq} has the following definition:
+\begin{verbatim}
+leastsq(func,x0,args=(),Dfun=None,full_output=0,col_deriv=0,
+        ftol=1.49012e-8,xtol=1.49012e-8,gtol=0.0,maxfev=0,epsfcn=0.0,
+        factor=100,diag=None)
+\end{verbatim}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% TeX-master: "main"
+%%% End: 

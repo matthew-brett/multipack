@@ -1,0 +1,353 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{a4wide}
+\usepackage{amsmath}
+\usepackage{pythonrun}
+\newcommand{\bs}{\symbol{`\\}}
+%%tth:\newenvironment{pmatrix}{\left(\begin{array}1}{\end{array}\right)}
+\ifpythondistil\renewcommand{\bs}{}\fi
+\title{\texttt{pythonrun.sty v1.1} User's Guide\\
+\texttt{\normalsize http://koer.ioc.ee/\~{}pearu/python/}}
+\author{Pearu Peterson\\\texttt{\normalsize<pearu@ioc.ee>}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  The \texttt{pythonrun.sty} is a LaTeX2e package that can be used for
+  writing a Latex document if the author wishes to include python code
+  fragments to it. Most importantly, these code fragments can be
+  executed and the results of can be included to Latex output,
+  dynamically. These Latex documents must be compiled with
+  \texttt{--shell-escape} option. One can also ``distill'' these Latex
+  documents (that is to make them ``static'', and so that the
+  \texttt{latex->html}  converters can be applied).
+  
+  The purpose of \texttt{pythonrun.sty} is to ease writing python
+  specific tutorials in LaTeX.
+\end{abstract}
+\ifpythondistil\else
+\ifshellescape\else
+\begin{center}
+\large NB! Use \verb+latex --shell-escape+ for compiling this LaTeX
+document in order to get a complete version.  
+\end{center}
+\fi\fi
+
+\tableofcontents
+
+
+\section{Representing Python code in LaTeX}
+\label{sec:repr-pyth-code}
+
+Let us first create a python file from a latex document. For that we do
+\begin{verbatim}
+\begin{python}
+from Numeric import *
+\end{python}
+\pythonsave{init.py}
+\pythonreset
+\end{verbatim}
+(see the following sections to learn what is going on here).
+\begin{python}
+from Numeric import *
+\end{python}
+\pythonsave{init.py}
+\pythonreset
+
+\subsection{Commands \texttt{\bs pythoninput} and \texttt{\bs pythoninput*}}
+
+You can read a python code fragment from a file using \verb+\pythoninput+ 
+command. For example, 
+\begin{verbatim}
+\pythoninput{init.py}
+\end{verbatim}
+inserts the context of the file \verb+init.py+ to LaTeX document
+showing it in \verb+verbatim+ environment and saves it for latter use
+in python. Below is shown the context
+of the file \verb+init.py+ after using this command:%
+\pythoninput{init.py}
+
+If you wish to just load a python file but not show it in latex
+output, use
+\begin{verbatim}
+\pythoninput*{init.py}
+\end{verbatim}
+instead.
+\pythonreset           % This is to make sure that everything works
+\pythoninput*{init.py} % correctly
+                       
+\subsection{Environments \texttt{python} and \texttt{python*}}
+
+You can give a python code fragment in the \verb+python+ environment. For example,
+\begin{verbatim}
+\begin{python}
+def F(x):
+    return 1-x*x
+\end{python}
+\end{verbatim}
+shows it in verbatim
+\begin{python}
+def F(x):
+    return 1-x*x
+\end{python}
+and saves it for future use in python. 
+
+Use \verb+python*+ environment to hide the context from the latex but
+not from the python. For example, 
+\begin{verbatim}
+\begin{python*}
+def G(x):
+    return 1+x*x
+\end{python*}
+\end{verbatim}
+defines a python function \verb+G+ that can be used later but this
+definition is not shown in latex output.
+\begin{python*}
+def G(x):
+    return 1+x*x
+\end{python*}
+
+
+\section{Calling Python from LaTeX}
+
+Now that we have some python code fragments, we are ready to
+demonstrate how to call Python on these fragments. There are number of
+ways to do it using \verb+pythonrun.sty+ and the choice depends on the
+effect that user desires.
+The main principle is the following
+\begin{quotation}
+Collect all saved python code fragments into one fragment and
+  call python on it.
+\end{quotation}
+Now depending on whether to show and/or to save the last python code
+fragment, one should use different commands/environments.
+
+\subsection{Environments \texttt{pythonrun} and \texttt{pythonrun*}}
+
+To show the current fragment of python code in addition to running
+python, use environment 
+\verb+pythonrun+. For example,
+\begin{verbatim}
+\begin{pythonrun}
+print F(2),G(2)
+\end{pythonrun}
+\end{verbatim}
+shows the python code and the results of the python call on the collected
+python code fragments as shown below:
+\begin{pythonrun}
+print F(2),G(2)
+\end{pythonrun}
+
+To show only the results, use environment \verb+pythonrun*+ instead. For
+example,
+\begin{pythonrun*}
+print F(3),G(3)
+\end{pythonrun*}
+shows the results of the python call \verb+print F(3),G(3)+.
+
+The environments above will not save python code fragments for future
+use. In order to force it, use environments \verb+pythonrunwithsave+
+and \verb+pythonrunwithsave*+, respectively. However, one should need
+them only in rare cases. For example,
+\begin{verbatim}
+\begin{pythonrunwithsave}
+print 'Hello world!'
+\end{pythonrunwithsave}
+\end{verbatim}
+causes the printout \verb+Hello world!+ in all of the following calls
+to python.
+\begin{pythonrunwithsave}
+print 'Hello world!'
+\end{pythonrunwithsave}
+To see it explicitly, let's call python with
+\begin{pythonrun}
+print F(4),G(4)
+\end{pythonrun}
+
+
+\section{Saving, resetting, cleaning up, and unsuccessful calls}
+
+\subsection{Command \texttt{\bs pythonsave}}
+
+Command \verb+\pythonsave+ takes a file name as an argument and it
+collects all saved python code fragments and puts them into given
+file. See, for example, the creation of the file \verb+init.py+ in
+Section~\ref{sec:repr-pyth-code}.
+
+\subsection{Command \texttt{\bs pythonreset}}
+
+Command \verb+\pythonreset+ can be used for starting a new ``python
+session''. So, after calling
+\begin{verbatim}
+\pythonreset
+\end{verbatim}
+all python code fragments are forgotten and one can start inserting
+new ones.
+\pythonreset
+
+\subsection{Command \texttt{\bs pythonclean}}
+
+It is recommended to put \verb+\pythonclean+ at the end of latex
+document. It then removes all auxiliary python files created by
+\verb+pythonrun.sty+.
+
+\subsection{Unsuccessful python calls}
+
+Note that after resetting the function \verb+F+ is not defined (we are
+in a new python session). Here is what happens if one ignores it and
+causes the error in python call:
+\begin{pythonrun}
+print F(7)
+\end{pythonrun}
+Errors are handled in this way only in environments \verb+pythonrun+
+and \verb+pythonrun*+. Using environments \verb+pythoncall+,
+\verb+pythoncall*+, or command \verb+\pythonline+ (see below), the
+errors may transfer over to latex. If this happens, one can use
+\verb+\pythonsave+ to save python code fragments to a file and test the
+code directly.
+
+One can use also \verb+\ifshellescape \else \fi+ construction for
+debugging. 
+
+\section{Representing results in LaTeX}
+
+\subsection{Environment \texttt{pythoncall}}
+
+Environment \verb+pythonrun+ (and its relatives) shows the results of
+the python call in verbatim environment. This is safe even if errors
+occur. However, one may need to format the results using LaTeX
+features. For that, user can use the environment
+\verb+pythoncall+. For example, let us define (again) functions
+\begin{python}
+def F(x):
+    return 1-x*x
+def G(x):
+    return 1+x*x
+\end{python}
+and writing in latex
+\begin{verbatim}
+\begin{displaymath}
+F(2),G(2)=
+\begin{pythoncall}
+print F(2),',',G(2)
+\end{pythoncall}
+\end{displaymath}
+\end{verbatim}
+we will have the following latex output
+\begin{displaymath}
+F(2),G(2)=
+\begin{pythoncall}
+print F(2),',',G(2)
+\end{pythoncall}
+\end{displaymath}
+
+\subsection{Command \texttt{\bs pythonline}}
+
+Command \verb+\pythonline+ is a command version of the environment
+\verb+pythoncall+. For example,
+$F(5)/G(5)=\pythonline{print F(5)}/%
+\pythonline{print G(5)}\approx
+\pythonline{print round(F(5)/float(G(5)),6)}$ 
+is obtained as a result of
+\begin{verbatim}
+$F(5)/G(5)=\pythonline{print F(5)}/\pythonline{print G(5)}\approx
+\pythonline{print round(F(5)/float(G(5)),6)}$ 
+\end{verbatim}
+
+But be careful when using multiple lines in \verb+pythonline+
+argument! The output may not be what expected (because Python is very
+strict when dealing with spaces, tabs, newlines, etc).
+
+
+\section{Examples}
+
+First we reset
+\pythonreset
+and then introduce some python code
+\begin{python}
+import string; strrep=string.replace
+from Numeric import *
+def format4latex(x):
+    try: x=x.tolist()
+    except: x=list(x)
+    s=strrep(strrep(strrep(`x`,' ',''),'],[','\\\\'),',','&')
+    while s[0]=='[': s=s[1:-1]
+    return s
+def pmatrix(x):
+    print '\\begin{pmatrix}'+format4latex(x)+'\\end{pmatrix}'
+\end{python}
+Let us consider two matrices in python:
+\begin{python}
+A=array([[1,2],[3,4]])
+B=transpose(A)
+\end{python}
+or in latex:
+\begin{displaymath}
+  A=\pythonline{pmatrix(A)},\quad
+  B=A^T=\pythonline{pmatrix(B)},\quad\Rightarrow\qquad
+  A*B=\pythonline{pmatrix(matrixmultiply(A,B))}.
+\end{displaymath}
+This is a result of the following
+\begin{verbatim}
+\begin{displaymath}
+  A=\pythonline{pmatrix(A)},\quad
+  B=A^T=\pythonline{pmatrix(B)},\quad\Rightarrow\qquad
+  A*B=\pythonline{pmatrix(matrixmultiply(A,B))}.
+\end{displaymath}
+\end{verbatim}
+
+
+\section{Notes}
+
+\subsection{Using Emacs}
+
+
+When I was writing this document in emacs, I used the following
+commands in my \texttt{.emacs} file:
+\begin{verbatim}
+(global-set-key [f7] 'latex-mode)
+(global-set-key [f8] 'python-mode)
+\end{verbatim}
+These were quite useful when editing this rather mixed latex-python
+document.
+
+\subsection{Distillation}
+
+Starting with the version \verb+1.1+, \verb+pythonrun.sty+ comes with
+a Python program \verb+dpythonrun.py+. This program translates users
+Latex document (that uses \verb+pythonrun.sty+) to its ``static''
+version. In this static document the use of \verb+pythonrun.sty+ is not
+required anymore and it contains also the results of the python calls. 
+This new document can be used for converting it to some other
+format, say, to HTML.
+
+The usage of \verb+dpythonrun.py+ is the following. It takes two optional
+arguments: an input file name as a first argument and an output file
+name as a second argument (if the latter is missing, the output file name
+is constructed by prepending \verb+distil_+ to the input file name).
+Here is an example how the current User's Guide was converted to HTML
+using \verb+tth+\footnote{See
+  \texttt{http://hutchinson.belmont.ma.us/tth/}}:
+\begin{verbatim}
+$ dpythonrun.py pythonrun.tex # This generates distil_pythonrun.tex
+$ latex distil_pythonrun.tex  # Three times
+$ tth < distil_pythonrun.tex > pythonrun.html -Ldistil_pythonrun -i
+\end{verbatim}
+
+%Let us clean up
+\pythonclean
+\ifpythondistil\else
+\ifshellescape\else
+\typeout{***********************************************************}
+\typeout{Latex this document with --shell-escape option in order to }
+\typeout{get a complete version:}
+\typeout{ latex --shell-escape pythonrun.tex}
+\typeout{***********************************************************}
+\fi\fi
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

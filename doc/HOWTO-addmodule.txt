@@ -1,0 +1,76 @@
+
+Here follows a mini HOWTO how one should add a new module to Multipack.
+
+I will consider minpack as an example:
+1) cd multipack
+
+2) If you don't have minpack library installed on your system then 
+   2.1) mkdir minpack
+   2.2) # copy all needed Fortran files to minpack
+   2.3) # make sure that 'cd minpack && make LIB=minpack' works, that is, 
+       creates a file libminpack.a.
+   Even if you have minpack library and you are planning to contribute
+   it to Multipack, you should do 2.1)--2.3) anyway.
+   (See below 6) what you can do if you have minpack already installed on
+   your system.)
+
+3) Create C-file __minpack.c that has the following structure:
+/* $Revis ion: <version> $ */
+/* module_methods:
+   {"_hybrd", minpack_hybrd, METH_VARARGS, doc_hybrd},
+ */
+/* link libraries: (one item per line, in proper order)
+   minpack
+ */
+/* python files: (to be imported in Multipack.py)
+   minpack.py
+ */
+#if defined(NO_APPEND_FORTRAN)
+#define HYBRD  hybrd
+#else
+#define HYBRD  hybrd_
+#endif
+void HYBRD();
+static char doc_hybrd[] = " ... "
+static PyObject *minpack_hybrd(PyObject *dummy, PyObject *args) {
+ ...
+}
+/* EOF __minpack.c */
+
+4) Create python file `minpack.py' (as specified in the C-file above)
+that defines wrapper functions: fsolve for _hybrd, for example.  The
+python file should start with the following imports:
+
+import _minpack
+from common_routines import *              # optional
+__version__="$Revision: 1.3 $"[10:-1] # optional
+
+5) Edit the main Makefile by adding `minpack' to the variable MODULES:
+MODULES+=minpack
+Note: You don't have do modify Makefile if you don't want to. 
+      You could just call it as follows: 'make MODULES=minpack'
+
+6) If you have libminpack.a on your system (complied and linked properly
+for dynamical loading) then you could specify it in Makefile as follows:
+LINKLIBS:=minpack
+LINKLIBSDIR:=/usr/local/lib # where libminpack.a situates.
+
+7) Type `make'. This should build Multipack with minpack module
+   included. See also Note in 5) for building Multipack for single
+   modules.
+
+8) Finally, write documentation for new python functions. See
+doc/*.tex for examples.
+
+I think, I have covered all the main steps. You can also take a look
+at existing files if I have missed something.  
+
+If you think that your module should be added to Multipack
+distribution, contact Travis Oliphant <Oliphant.Travis@altavista.net>.
+
+Comments and suggestions are very welcome.
+
+Pearu Peterson <pearu@ioc.ee>
+Created: June 9, 1999
+$Revision: 1.3 $
+$Date: 1999/06/14 13:49:56 $
